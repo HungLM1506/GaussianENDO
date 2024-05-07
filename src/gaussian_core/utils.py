@@ -228,22 +228,22 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
             pred_depth_tensor = torch.cat(pred_depth, 0)
             gt_image_tensor = torch.cat(gt_images, 0)
 
-            mask = data['mask'].unsqueeze(
-                0).unsqueeze(0).to(image_tensor.device)
+            # mask = data['mask'].unsqueeze(
+            #     0).unsqueeze(0).to(image_tensor.device)
             weight = data['spatialweight'].unsqueeze(
                 0).unsqueeze(0).to(image_tensor.device)
             gt_depth = (data['depth']/(data['depth'].max()+1e-5)
                         ).unsqueeze(0).unsqueeze(0).to(image_tensor.device)
 
             # Loss
-            Ll1 = (torch.abs((image_tensor*mask - gt_image_tensor*mask))
+            Ll1 = (torch.abs((image_tensor - gt_image_tensor))
                    * weight).mean()
-            psnr_ = psnr(image_tensor*mask, gt_image_tensor *
-                         mask).mean().double()
+            psnr_ = psnr(image_tensor, gt_image_tensor *
+                         ).mean().double()
 
             depth_loss = F.huber_loss(
-                pred_depth_tensor*mask, gt_depth*mask, delta=0.2)
-            img_tvloss = img_tv_loss(image_tensor*(1-mask))
+                pred_depth_tensor, gt_depth, delta=0.2)
+            img_tvloss = img_tv_loss(image_tensor)
 
             loss = Ll1 + 0.5*depth_loss + 0.01*img_tvloss
 
@@ -251,12 +251,6 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
                 opacities_loss_tensor = torch.tensor(
                     entropy_opacities_loss_list).float()
                 loss += torch.mean(opacities_loss_tensor)
-
-            # if iteration > regular_from and n_gaussians_in_sampling > 0:
-            #     sdf_loss_tensor = torch.tensor(sdf_loss_list).float()
-            #     normal_loss_tensor = torch.tensor(normal_loss_list).float()
-            #     loss += torch.mean(sdf_loss_tensor) + \
-            #         torch.mean(normal_loss_tensor)
 
             if stage == "fine":
                 tv_loss = gaussians.compute_regulation(1e-3, 2e-2, 1e-3)
