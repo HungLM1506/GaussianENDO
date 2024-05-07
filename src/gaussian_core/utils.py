@@ -222,126 +222,6 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
                 visibility_filter_list.append(visibility_filter.unsqueeze(0))
                 viewspace_point_tensor_list.append(viewspace_point_tensor)
 
-                if iteration > start_entropy_regular and iteration < end_entropy_regular:
-                    if visibility_filter is not None:
-                        vis_opacities = opacities[visibility_filter]
-                    else:
-                        vis_opacities = opacities
-
-                    entropy_opacities_loss_list.append(entropy_regularization_factor * (
-                        - vis_opacities * torch.log(vis_opacities + 1e-10)
-                        - (1 - vis_opacities) *
-                        torch.log(1 - vis_opacities + 1e-10)
-                    ).mean())
-
-                if iteration > regular_from:
-                    if iteration == regular_from + 1 or iteration % reset_neighbors_every == 0:
-                        gaussians.reset_neighbors(regularity_knn)
-
-                    sampling_mask = visibility_filter
-
-                    with torch.no_grad():
-                        gaussian_to_camera = torch.nn.functional.normalize(
-                            fov_camera.get_camera_center() - gaussians.get_xyz, dim=-1)
-                        gaussian_centers_in_camera_space = fov_camera.get_world_to_view_transform(
-                        ).transform_points(gaussians.get_xyz)
-
-                        gaussian_centers_z = gaussian_centers_in_camera_space[..., 2] + 0.
-                        gaussian_centers_map_z = gaussians.get_points_depth_in_depth_map(
-                            fov_camera, depth, gaussian_centers_in_camera_space, gs_cam.image_height, gs_cam.image_width)
-
-                        gaussian_standard_deviations = (
-                            gaussians.get_scaling *
-                            quaternion_apply(quaternion_invert(
-                                gaussians.get_rotation), gaussian_to_camera)
-                        ).norm(dim=-1)
-
-                        gaussians_close_to_surface = (gaussian_centers_map_z - gaussian_centers_z).abs(
-                        ) < close_gaussian_threshold * gaussian_standard_deviations
-                        sampling_mask = sampling_mask * gaussians_close_to_surface
-
-                    n_gaussians_in_sampling = sampling_mask.sum()
-
-                    if n_gaussians_in_sampling > 0:
-                        sdf_samples, sdf_gaussian_idx = gaussians.sample_points_in_gaussians(
-                            num_samples=sample_number,
-                            sampling_scale_factor=1.5,
-                            mask=sampling_mask
-                        )
-
-                        fields = gaussians.get_field_values(
-                            sdf_samples, sdf_gaussian_idx,
-                            return_sdf=True,
-                            density_threshold=density_threshold, density_factor=density_factor,
-                            return_sdf_grad=False, sdf_grad_max_value=10.,
-                            return_closest_gaussian_opacities=True,
-                            return_beta=True,
-                            opacity=opacities
-                        )
-
-                        # Compute the depth of the points in the gaussians
-                        sdf_samples_in_camera_space = fov_camera.get_world_to_view_transform(
-                        ).transform_points(sdf_samples)
-                        sdf_samples_z = sdf_samples_in_camera_space[..., 2] + 0.
-                        proj_mask = sdf_samples_z > fov_camera.znear
-                        sdf_samples_map_z = gaussians.get_points_depth_in_depth_map(
-                            fov_camera, depth, sdf_samples_in_camera_space[proj_mask], gs_cam.image_height, gs_cam.image_width)
-                        sdf_estimation = sdf_samples_map_z - \
-                            sdf_samples_z[proj_mask]
-
-                        with torch.no_grad():
-                            sdf_sample_std = gaussian_standard_deviations[sdf_gaussian_idx][proj_mask]
-
-                        # sdf loss
-                        sdf_values = fields['sdf'][proj_mask]
-                        sdf_estimation_loss = (
-                            sdf_values - sdf_estimation.abs()).abs() / sdf_sample_std
-                        sdf_loss = sdf_estimation_factor * sdf_estimation_loss.clamp(
-                            max=10.*gaussians.get_cameras_spatial_extent(wrap_gs_cams)).mean()
-
-                        # normal loss
-                        closest_gaussians_idx = gaussians.knn_idx[sdf_gaussian_idx]
-                        # Compute minimum scaling
-                        closest_min_scaling = gaussians.get_scaling.min(
-                            dim=-1)[0][closest_gaussians_idx].detach().view(len(sdf_samples), -1)
-
-                        # Compute normals and flip their sign if needed
-                        closest_gaussian_normals = gaussians.get_normals()[
-                            closest_gaussians_idx]
-                        samples_gaussian_normals = gaussians.get_normals()[
-                            sdf_gaussian_idx]
-                        closest_gaussian_normals = closest_gaussian_normals * torch.sign(
-                            (closest_gaussian_normals *
-                             samples_gaussian_normals[:, None]).sum(dim=-1, keepdim=True)
-                        ).detach()
-
-                        # Compute weights for normal regularization, based on the gradient of the sdf
-                        closest_gaussian_opacities = fields['closest_gaussian_opacities'].detach(
-                        )
-                        normal_weights = (
-                            (sdf_samples[:, None] - gaussians.get_xyz[closest_gaussians_idx]) * closest_gaussian_normals).sum(dim=-1).abs()
-
-                        # sdf_better_normal_gradient_through_normal_only
-                        normal_weights = normal_weights.detach()
-                        normal_weights = closest_gaussian_opacities * \
-                            normal_weights / \
-                            closest_min_scaling.clamp(min=1e-6)**2
-
-                        # The weights should have a sum of 1 because of the eikonal constraint
-                        normal_weights_sum = normal_weights.sum(
-                            dim=-1).detach()
-                        normal_weights = normal_weights / \
-                            normal_weights_sum.unsqueeze(-1).clamp(min=1e-6)
-
-                        # Compute regularization loss
-                        sdf_better_normal_loss = (samples_gaussian_normals - (normal_weights[..., None] * closest_gaussian_normals).sum(dim=-2)
-                                                  ).pow(2).sum(dim=-1)
-
-                        normal_loss = sdf_normal_factor * sdf_better_normal_loss.mean()
-
-                        sdf_loss_list.append(sdf_loss)
-                        normal_loss_list.append(normal_loss)
-
             radii = torch.cat(radii_list, 0).max(dim=0).values
             visibility_filter = torch.cat(visibility_filter_list).any(dim=0)
             image_tensor = torch.cat(images, 0)
@@ -372,11 +252,11 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
                     entropy_opacities_loss_list).float()
                 loss += torch.mean(opacities_loss_tensor)
 
-            if iteration > regular_from and n_gaussians_in_sampling > 0:
-                sdf_loss_tensor = torch.tensor(sdf_loss_list).float()
-                normal_loss_tensor = torch.tensor(normal_loss_list).float()
-                loss += torch.mean(sdf_loss_tensor) + \
-                    torch.mean(normal_loss_tensor)
+            # if iteration > regular_from and n_gaussians_in_sampling > 0:
+            #     sdf_loss_tensor = torch.tensor(sdf_loss_list).float()
+            #     normal_loss_tensor = torch.tensor(normal_loss_list).float()
+            #     loss += torch.mean(sdf_loss_tensor) + \
+            #         torch.mean(normal_loss_tensor)
 
             if stage == "fine":
                 tv_loss = gaussians.compute_regulation(1e-3, 2e-2, 1e-3)
