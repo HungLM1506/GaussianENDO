@@ -204,12 +204,14 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
 
             for viewpoint_cam in viewpoint_cams:
                 gs_cam = viewpoint_cam
-                fov_camera = convert_gs_to_pytorch3d([gs_cam])
-
+                
+                # init render
                 render_pkg = render(gs_cam, gaussians,
                                     data['time'], background, stage=stage)
+                # reconstruct scene
                 image, viewspace_point_tensor, visibility_filter, radii, depth = render_pkg["render"], render_pkg[
                     "viewspace_points"], render_pkg["visibility_filter"], render_pkg["radii"], render_pkg["depth"]
+                
                 opacities = render_pkg["opacities"]
                 images.append(image.unsqueeze(0))
                 depth = depth / (depth.max() + 1e-5)
