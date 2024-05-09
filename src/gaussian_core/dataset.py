@@ -131,9 +131,9 @@ def _load_data(basedir, factor=None, width=None, height=None, load_imgs=True, fg
     def check_colorimg_fn(f, i): return f.endswith(
         'JPG') or f.endswith('jpg') or f.endswith('png')
 
-    if fg_mask:
-        def check_maskimg_fn(f, i): return f.endswith(
-            'JPG') or f.endswith('jpg') or f.endswith('png')
+    # if fg_mask:
+    #     def check_maskimg_fn(f, i): return f.endswith(
+    #         'JPG') or f.endswith('jpg') or f.endswith('png')
 
     if use_depth:
         def check_depthimg_fn(f, i): return f.endswith(
@@ -287,12 +287,14 @@ class EndoDataset:
         self.sparse_path = os.path.join(
             self.root_path, 'sparse/')  # folder chứa colmap
 
-        if not os.path.exists(os.path.join(self.root_path, 'gt_masks')):
-            gt_mask = False
-        else:
-            gt_mask = True
+        # if not os.path.exists(os.path.join(self.root_path, 'gt_masks')):
+        #     gt_mask = False
+        # else:
+        #     gt_mask = True
         # factor=8 downsamples original imgs by 8x
-        poses, _, imgs, masks, depth = _load_data(
+        # poses, _, imgs, masks, depth = _load_data(
+        #     self.root_path, factor=None, fg_mask=True, use_depth=True, gt_mask=gt_mask)
+        poses, _, imgs, depth = _load_data(
             self.root_path, factor=None, fg_mask=True, use_depth=True, gt_mask=gt_mask)
 
         davinci_endoscopic = True
@@ -301,7 +303,7 @@ class EndoDataset:
                 [poses[:, 1:2, :], -poses[:, 0:1, :], poses[:, 2:, :]], 1)
         poses = np.moveaxis(poses, -1, 0).astype(np.float32)
         images = np.moveaxis(imgs, -1, 0).astype(np.float32)
-        masks = np.moveaxis(masks, -1, 0).astype(np.float32)
+        # masks = np.moveaxis(masks, -1, 0).astype(np.float32)
         depth = np.moveaxis(depth, -1, 0).astype(np.float32)
 
         recenter = True
@@ -312,14 +314,14 @@ class EndoDataset:
             self.end_index = len(images)
 
         self.images = images[self.start_index:self.end_index]
-        self.masks = masks[self.start_index:self.end_index]
+        # self.masks = masks[self.start_index:self.end_index]
         self.depth = depth[self.start_index:self.end_index]
 
         self.images = torch.from_numpy(self.images).permute(0, 3, 1, 2)
-        self.masks = torch.from_numpy(self.masks)
+        # self.masks = torch.from_numpy(self.masks)
         self.depth = torch.from_numpy(self.depth)
 
-        self.spatialweight = spatiotemporal_importance_from_masks(self.masks)
+        # self.spatialweight = spatiotemporal_importance_from_masks(self.masks)
 
         self.cameras = []
         self.time = []
@@ -408,7 +410,7 @@ class EndoDataset:
         results['camera'] = self.cameras[index[0]]
         results['time'] = self.time[index[0]]
 
-        results['mask'] = self.masks[index[0]]
+        # results['mask'] = self.masks[index[0]]
         results['depth'] = self.depth[index[0]]
         results['spatialweight'] = self.spatialweight[index[0]]
 
