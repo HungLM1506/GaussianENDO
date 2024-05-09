@@ -93,7 +93,7 @@ def storePly(path, xyz, rgb):
     ply_data = PlyData([vertex_element])
     ply_data.write(path)
 
-
+# read point cloud 
 def fetchPly(path):
     plydata = PlyData.read(path)
     vertices = plydata['vertex']
@@ -201,17 +201,16 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
             viewspace_point_tensor_list = []
             entropy_opacities_loss_list = []
 
-
             for viewpoint_cam in viewpoint_cams:
                 gs_cam = viewpoint_cam
-                
+
                 # init render
                 render_pkg = render(gs_cam, gaussians,
                                     data['time'], background, stage=stage)
                 # reconstruct scene
                 image, viewspace_point_tensor, visibility_filter, radii, depth = render_pkg["render"], render_pkg[
                     "viewspace_points"], render_pkg["visibility_filter"], render_pkg["radii"], render_pkg["depth"]
-                
+
                 opacities = render_pkg["opacities"]
                 images.append(image.unsqueeze(0))
                 depth = depth / (depth.max() + 1e-5)
@@ -231,14 +230,13 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
 
             # mask = data['mask'].unsqueeze(
             #     0).unsqueeze(0).to(image_tensor.device)
-            weight = data['spatialweight'].unsqueeze(
-                0).unsqueeze(0).to(image_tensor.device)
+            # weight = data['spatialweight'].unsqueeze(
+            #     0).unsqueeze(0).to(image_tensor.device)
             gt_depth = (data['depth']/(data['depth'].max()+1e-5)
                         ).unsqueeze(0).unsqueeze(0).to(image_tensor.device)
 
             # Loss
-            Ll1 = (torch.abs((image_tensor - gt_image_tensor))
-                   * weight).mean()
+            Ll1 = (torch.abs((image_tensor - gt_image_tensor))).mean()
             psnr_ = psnr(image_tensor, gt_image_tensor
                          ).mean().double()
 
@@ -268,11 +266,13 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
             with torch.no_grad():
                 # Progress bar
                 ema_loss_for_log = 0.4 * loss.item() + 0.6 * ema_loss_for_log
+                print("loss:", loss.item())
+                print('ema_loss_for_log', ema_loss_for_log)
                 ema_psnr_for_log = 0.4 * psnr_ + 0.6 * ema_psnr_for_log
                 total_point = gaussians._xyz.shape[0]
 
                 if iteration % 10 == 0:
-                    progress_bar.set_postfix({"Loss": f"{ema_loss_for_log:.{7}f}",
+                    progress_bar.set_postfix({"Loss": f"{ema_loss_for_log:.{4}f}",
                                               "psnr": f"{psnr_:.{2}f}",
                                               "point": f"{total_point}"
                                               })

@@ -79,7 +79,7 @@ def getProjectionMatrix(znear, zfar, fovX, fovY):
 
 def fov2focal(fov, pixels):
     """
-        FOV: Field of View. Nó là góc từ camera đến object
+        FOV: Field of View. Nó là góc từ camera đến object mà có thể nhìn thấy 
         pixel: là chiều dài or chiều rộng của image plane
     """
     return pixels / (2 * math.tan(fov / 2))
