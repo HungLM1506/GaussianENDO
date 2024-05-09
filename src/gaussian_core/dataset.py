@@ -412,7 +412,7 @@ class EndoDataset:
 
         # results['mask'] = self.masks[index[0]]
         results['depth'] = self.depth[index[0]]
-        results['spatialweight'] = self.spatialweight[index[0]]
+        # results['spatialweight'] = self.spatialweight[index[0]]
 
         results['sparse_path'] = self.sparse_path
 
