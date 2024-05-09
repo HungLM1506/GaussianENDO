@@ -200,8 +200,7 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
             visibility_filter_list = []
             viewspace_point_tensor_list = []
             entropy_opacities_loss_list = []
-            sdf_loss_list = []
-            normal_loss_list = []
+
 
             for viewpoint_cam in viewpoint_cams:
                 gs_cam = viewpoint_cam
@@ -238,7 +237,7 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
             # Loss
             Ll1 = (torch.abs((image_tensor - gt_image_tensor))
                    * weight).mean()
-            psnr_ = psnr(image_tensor, gt_image_tensor *
+            psnr_ = psnr(image_tensor, gt_image_tensor
                          ).mean().double()
 
             depth_loss = F.huber_loss(
