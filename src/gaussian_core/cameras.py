@@ -11,8 +11,8 @@ class Camera(nn.Module):
                  trans=np.array([0.0, 0.0, 0.0]), scale=1.0, data_device = "cuda"
                  ):
         """
-            # lấy các tham số đầu vào của image cũng như các ma trận extrinsic và ma trận chiếu 
-            colmap_id:
+            # lấy các tham số đầu vào của image cũng như các ma trận intrinsic và ma trận chiếu 
+            colmap_id: 
             R: rotation matrix
             T: transform matrix
             FOVx,FOVy: Field of View
