@@ -167,30 +167,30 @@ def _load_data(basedir, factor=None, width=None, height=None, load_imgs=True, fg
     rgb_imgs = [imread(f)[..., :3]/255. for f in rgb_files]
     rgb_imgs = np.stack(rgb_imgs, -1)
 
-    mask_imgs = None
-    if fg_mask:
-        if gt_mask:
-            mask_files, _ = _preprocess_imgs(
-                basedir, dir_name='gt_masks', factor=factor, width=width, height=height, check_fn=check_maskimg_fn)
-        else:
-            mask_files, _ = _preprocess_imgs(
-                basedir, dir_name='masks', factor=factor, width=width, height=height, check_fn=check_maskimg_fn)
+    # mask_imgs = None
+    # if fg_mask:
+    #     if gt_mask:
+    #         mask_files, _ = _preprocess_imgs(
+    #             basedir, dir_name='gt_masks', factor=factor, width=width, height=height, check_fn=check_maskimg_fn)
+    #     else:
+    #         mask_files, _ = _preprocess_imgs(
+    #             basedir, dir_name='masks', factor=factor, width=width, height=height, check_fn=check_maskimg_fn)
 
-        if len(mask_files) != len(rgb_files):
-            print('Mismatch between rgb imgs {} and mask imgs {} !!!!'.format(
-                len(rgb_files), len(mask_files)))
-            return
+    #     if len(mask_files) != len(rgb_files):
+    #         print('Mismatch between rgb imgs {} and mask imgs {} !!!!'.format(
+    #             len(rgb_files), len(mask_files)))
+    #         return
 
-        mask_imgs = [imread(f) / 255.0 for f in mask_files]
+    #     mask_imgs = [imread(f) / 255.0 for f in mask_files]
 
-        if mask_imgs[0].shape[:2] != rgb_imgs[..., 0].shape[:2]:
-            print('Mismatch size between rgb imgs {} and mask imgs {} !!!!'.format(
-                rgb_imgs[..., 0].shape[:2], mask_imgs[0].shape[:2]))
-            return
+    #     if mask_imgs[0].shape[:2] != rgb_imgs[..., 0].shape[:2]:
+    #         print('Mismatch size between rgb imgs {} and mask imgs {} !!!!'.format(
+    #             rgb_imgs[..., 0].shape[:2], mask_imgs[0].shape[:2]))
+    #         return
 
-        mask_imgs = np.stack(mask_imgs, -1)
-        # Convert 0 for tool, 1 for not tool
-        mask_imgs = 1.0 - mask_imgs
+    #     mask_imgs = np.stack(mask_imgs, -1)
+    #     # Convert 0 for tool, 1 for not tool
+    #     mask_imgs = 1.0 - mask_imgs
 
     depth_imgs = None
     if use_depth:
@@ -215,11 +215,12 @@ def _load_data(basedir, factor=None, width=None, height=None, load_imgs=True, fg
         # print('min depth:', min_depth, 'max depth:', max_depth)
 
     rgb_imgs = rgb_imgs[:500]
-    mask_imgs = mask_imgs[:500]
+    # mask_imgs = mask_imgs[:500]
     depth_imgs = depth_imgs[:500]
 
     print('Loaded image data', rgb_imgs.shape, poses[:, -1, 0])
-    return poses, bds, rgb_imgs, mask_imgs, depth_imgs
+    # return poses, bds, rgb_imgs, mask_imgs, depth_imgs
+    return poses, bds, rgb_imgs, depth_imgs
 
 
 def normalize(x):
