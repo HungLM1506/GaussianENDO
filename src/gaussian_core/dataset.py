@@ -117,7 +117,7 @@ def _preprocess_imgs(basedir, dir_name='images', factor=None, width=None, height
     return imgfiles, factor
 
 
-def _load_data(basedir, factor=None, width=None, height=None, load_imgs=True, fg_mask=False, use_depth=False, gt_mask=True):
+def _load_data(basedir, factor=None, width=None, height=None, load_imgs=True, use_depth=False):
     """
         basedir:
         factor: 
@@ -295,7 +295,7 @@ class EndoDataset:
         # poses, _, imgs, masks, depth = _load_data(
         #     self.root_path, factor=None, fg_mask=True, use_depth=True, gt_mask=gt_mask)
         poses, _, imgs, depth = _load_data(
-            self.root_path, factor=None, fg_mask=True, use_depth=True, gt_mask=gt_mask)
+            self.root_path, factor=None, use_depth=True)
 
         davinci_endoscopic = True
         if not davinci_endoscopic:
