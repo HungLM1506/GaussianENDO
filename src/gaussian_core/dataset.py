@@ -146,10 +146,10 @@ def _load_data(basedir, factor=None, width=None, height=None, load_imgs=True, us
     rgb_files, new_factor = _preprocess_imgs(
         basedir, dir_name='images', factor=factor, width=width, height=height, check_fn=check_colorimg_fn)
 
-    if poses.shape[-1] != len(rgb_files):
-        print('Mismatch between imgs {} and poses {} !!!!'.format(
-            len(rgb_files), poses.shape[-1]))
-        return
+    # if poses.shape[-1] != len(rgb_files):
+    #     print('Mismatch between imgs {} and poses {} !!!!'.format(
+    #         len(rgb_files), poses.shape[-1]))
+    #     return
 
     sh = imageio.imread(rgb_files[0]).shape  # shape
     poses[:2, 4, :] = np.array(sh[:2]).reshape([2, 1])

@@ -243,7 +243,7 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
                          ).mean().double()
 
             depth_loss = F.huber_loss(
-                pred_depth_tensor, gt_depth, delta=0.2)
+                pred_depth_tensor, gt_depth[..., 0], delta=0.2)
             img_tvloss = img_tv_loss(image_tensor)
 
             loss = Ll1 + 0.5*depth_loss + 0.01*img_tvloss
