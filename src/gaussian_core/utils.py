@@ -93,7 +93,9 @@ def storePly(path, xyz, rgb):
     ply_data = PlyData([vertex_element])
     ply_data.write(path)
 
-# read point cloud 
+# read point cloud
+
+
 def fetchPly(path):
     plydata = PlyData.read(path)
     vertices = plydata['vertex']
@@ -265,9 +267,10 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
 
             with torch.no_grad():
                 # Progress bar
-                ema_loss_for_log = 0.4 * loss.item() + 0.6 * ema_loss_for_log
-                print("loss:", loss.item())
-                print('ema_loss_for_log', ema_loss_for_log)
+                # ema_loss_for_log = 0.4 * loss.item() + 0.6 * ema_loss_for_log
+                ema_loss_for_log = loss.item()
+                # print("loss:", loss.item())
+                # print('ema_loss_for_log', ema_loss_for_log)
                 ema_psnr_for_log = 0.4 * psnr_ + 0.6 * ema_psnr_for_log
                 total_point = gaussians._xyz.shape[0]
 
