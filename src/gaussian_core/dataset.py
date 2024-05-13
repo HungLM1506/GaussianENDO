@@ -321,7 +321,7 @@ class EndoDataset:
 
         self.images = torch.from_numpy(self.images).permute(0, 3, 1, 2)
         # self.masks = torch.from_numpy(self.masks)
-        self.depth = torch.from_numpy(self.depth)
+        # self.depth = torch.from_numpy(self.depth)
 
         # self.spatialweight = spatiotemporal_importance_from_masks(self.masks)
 
