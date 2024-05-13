@@ -372,7 +372,7 @@ def testing(opt, dataloader, gaussians, save_gt=True):
             viewpoint_cams = [data['camera']]
             for viewpoint_cam in viewpoint_cams:
                 rendering = render(data['camera'], gaussians, data['time'], background)[
-                    "render"]
+                    "depth"]
 
                 render_images.append(to8b(rendering).transpose(1, 2, 0))
                 render_list.append(rendering)
@@ -394,7 +394,7 @@ def testing(opt, dataloader, gaussians, save_gt=True):
             count += 1
 
     imageio.mimwrite(os.path.join(
-        opt.model_path, 'video_render.mp4'), render_images, fps=10, quality=8)
+        opt.model_path, 'video_render_depth.mp4'), render_images, fps=10, quality=8)
 
     if save_gt:
         count = 0
