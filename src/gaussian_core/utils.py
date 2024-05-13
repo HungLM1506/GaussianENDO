@@ -18,6 +18,7 @@ from utils.graphics_utils import BasicPointCloud
 from gaussian_core.cameras import CamerasWrapper
 from gaussian_core.cameras import convert_gs_to_pytorch3d
 from pytorch3d.transforms import quaternion_apply, quaternion_invert
+from utils.loss_utils import ssim
 
 
 def to8b(x): return (255*np.clip(x.cpu().numpy(), 0, 1)).astype(np.uint8)
@@ -160,10 +161,9 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
     ema_loss_for_log = 0.0
     ema_psnr_for_log = 0.0
 
-    start_entropy_regular = 4000
-    end_entropy_regular = 7000
+    # start_entropy_regular = 4000
+    # end_entropy_regular = 7000
     regular_from = 4000
-
 
     final_iter = num_iter
 
@@ -241,7 +241,7 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
             img_tvloss = img_tv_loss(image_tensor)
 
             # loss = Ll1 + 0.5*depth_loss + 0.01*img_tvloss
-            loss = 0.8*Ll1 + 0.2*psnr_
+            loss = 0.8*Ll1 + 0.2 * (1.0 - ssim(image_tensor,gt_image_tensor))
 
             # if iteration > start_entropy_regular and iteration < end_entropy_regular:
             #     opacities_loss_tensor = torch.tensor(
