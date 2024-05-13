@@ -162,17 +162,8 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
 
     start_entropy_regular = 4000
     end_entropy_regular = 7000
-    entropy_regularization_factor = 0.1
-
-    close_gaussian_threshold = 2
-    regularity_knn = 16
-    reset_neighbors_every = 500
     regular_from = 4000
-    density_factor = 1. / 16.
-    density_threshold = 1.
-    sdf_estimation_factor = 0.2
-    sdf_normal_factor = 0.2
-    sample_number = 4000
+
 
     final_iter = num_iter
 
@@ -193,7 +184,6 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
                 gaussians.oneupSHdegree()
 
             viewpoint_cams = [data['camera']]
-            wrap_gs_cams = CamerasWrapper(viewpoint_cams)
 
             images = []
             gt_images = []
@@ -253,10 +243,10 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
             # loss = Ll1 + 0.5*depth_loss + 0.01*img_tvloss
             loss = 0.8*Ll1 + 0.2*psnr_
 
-            if iteration > start_entropy_regular and iteration < end_entropy_regular:
-                opacities_loss_tensor = torch.tensor(
-                    entropy_opacities_loss_list).float()
-                loss += torch.mean(opacities_loss_tensor)
+            # if iteration > start_entropy_regular and iteration < end_entropy_regular:
+            #     opacities_loss_tensor = torch.tensor(
+            #         entropy_opacities_loss_list).float()
+            #     loss += torch.mean(opacities_loss_tensor)
 
             if stage == "fine":
                 tv_loss = gaussians.compute_regulation(1e-3, 2e-2, 1e-3)
