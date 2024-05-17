@@ -24,7 +24,7 @@ if __name__ == '__main__':
     parser.add_argument('--coarse_iters', type=int,
                         default=3000, help="training iters")
     parser.add_argument('--fine_iters', type=int,
-                        default=80000, help="training iters")
+                        default=65000, help="training iters")
     parser.add_argument('--percent_dense', type=float,
                         default=0.01, help="percent of dense points")
     parser.add_argument('--position_lr_init', type=float,
