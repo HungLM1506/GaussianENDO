@@ -192,29 +192,29 @@ def _load_data(basedir, factor=None, width=None, height=None, load_imgs=True, us
     #     # Convert 0 for tool, 1 for not tool
     #     mask_imgs = 1.0 - mask_imgs
 
-    # if use_depth:
-    #     depth_files, _ = _preprocess_imgs(
-    #         basedir, dir_name='depth', factor=factor, width=width, height=height, check_fn=check_depthimg_fn)
+    if use_depth:
+        depth_files, _ = _preprocess_imgs(
+            basedir, dir_name='depth', factor=factor, width=width, height=height, check_fn=check_depthimg_fn)
 
-    #     if len(depth_files) != len(rgb_files):
-    #         print('Mismatch between rgb imgs {} and depth imgs {} !!!!'.format(
-    #             len(rgb_files), len(depth_files)))
-    #         return
+        if len(depth_files) != len(rgb_files):
+            print('Mismatch between rgb imgs {} and depth imgs {} !!!!'.format(
+                len(rgb_files), len(depth_files)))
+            return
 
-    #     depth_imgs = [imread(f) for f in depth_files]
+        depth_imgs = [imread(f) for f in depth_files]
 
-    #     if depth_imgs[0].shape[:2] != rgb_imgs[..., 0].shape[:2]:
-    #         print('Mismatch size between rgb imgs {} and depth imgs {} !!!!'.format(
-    #             rgb_imgs[..., 0].shape[:2], depth_imgs[0].shape[:2]))
-    #         return
+        # if depth_imgs[0].shape[:2] != rgb_imgs[..., 0].shape[:2]:
+        #     print('Mismatch size between rgb imgs {} and depth imgs {} !!!!'.format(
+        #         rgb_imgs[..., 0].shape[:2], depth_imgs[0].shape[:2]))
+        #     return
 
-    #     depth_imgs = np.stack(depth_imgs, -1)
-    #     # min_depth = np.percentile(depth_imgs, 3.0)
-    #     # max_depth = np.percentile(depth_imgs, 99.9)
-    #     # print('min depth:', min_depth, 'max depth:', max_depth)
-    #     rgb_imgs = rgb_imgs[:500]
-    #     depth_imgs = depth_imgs[:500]
-    #     return poses, bds, rgb_imgs, depth_imgs
+        depth_imgs = np.stack(depth_imgs, -1)
+        # min_depth = np.percentile(depth_imgs, 3.0)
+        # max_depth = np.percentile(depth_imgs, 99.9)
+        # print('min depth:', min_depth, 'max depth:', max_depth)
+        rgb_imgs = rgb_imgs[:500]
+        depth_imgs = depth_imgs[:500]
+        return poses, bds, rgb_imgs, depth_imgs
 
     rgb_imgs = rgb_imgs[:500]
     # mask_imgs = mask_imgs[:500]
@@ -306,7 +306,7 @@ class EndoDataset:
         poses = np.moveaxis(poses, -1, 0).astype(np.float32)
         images = np.moveaxis(imgs, -1, 0).astype(np.float32)
         # masks = np.moveaxis(masks, -1, 0).astype(np.float32)
-        # depth = np.moveaxis(depth, -1, 0).astype(np.float32)
+        depth = np.moveaxis(depth, -1, 0).astype(np.float32)
 
         recenter = True
         if recenter and not davinci_endoscopic:
@@ -317,11 +317,11 @@ class EndoDataset:
 
         self.images = images[self.start_index:self.end_index]
         # self.masks = masks[self.start_index:self.end_index]
-        # self.depth = depth[self.start_index:self.end_index]
+        self.depth = depth[self.start_index:self.end_index]
 
         self.images = torch.from_numpy(self.images).permute(0, 3, 1, 2)
         # self.masks = torch.from_numpy(self.masks)
-        # self.depth = torch.from_numpy(self.depth)
+        self.depth = torch.from_numpy(self.depth)
 
         # self.spatialweight = spatiotemporal_importance_from_masks(self.masks)
 
@@ -413,7 +413,7 @@ class EndoDataset:
         results['time'] = self.time[index[0]]
 
         # results['mask'] = self.masks[index[0]]
-        # results['depth'] = self.depth[index[0]]
+        results['depth'] = self.depth[index[0]]
         # results['spatialweight'] = self.spatialweight[index[0]]
 
         results['sparse_path'] = self.sparse_path
