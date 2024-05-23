@@ -140,7 +140,8 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
     bg_color = [1, 1, 1]
     background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
 
-    densify_from_iter = 500
+    # densify_from_iter = 500
+    densify_from_iter = 1000
     densify_until_iter = 45000
     densification_interval = 100
     densify_grad_threshold_coarse = 0.0002
@@ -152,7 +153,8 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
     opacity_threshold_fine_init = 0.005
     opacity_threshold_fine_after = 0.005
 
-    pruning_from_iter = 500
+    # pruning_from_iter = 500
+    pruning_from_iter = 1000
     pruning_interval = 7000
 
     iter_start = torch.cuda.Event(enable_timing=True)
@@ -241,7 +243,8 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
             img_tvloss = img_tv_loss(image_tensor)
 
             # loss = Ll1 + 0.5*depth_loss + 0.01*img_tvloss
-            loss = 0.8*Ll1 + 0.1 * (1.0 - ssim(image_tensor, gt_image_tensor)) + 0.01*img_tvloss
+            # loss = 0.8*Ll1 + 0.2 * (1.0 - ssim(image_tensor, gt_image_tensor))
+            loss = Ll1 + 0.03 * (img_tvloss)
 
             # if iteration > start_entropy_regular and iteration < end_entropy_regular:
             #     opacities_loss_tensor = torch.tensor(
@@ -312,7 +315,7 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
                         # if use that, an error would occur in pruning due to all1s mask
                         # here free to treat the radius and the spatial lr scale as hyperparamters
                         gaussians.densify(densify_threshold,
-                                          opacity_threshold, 5, size_threshold)
+                                          opacity_threshold, 10, size_threshold)
 
                         if iteration > regular_from:
                             gaussians.reset_neighbors()
@@ -320,7 +323,7 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
                     if iteration > pruning_from_iter and iteration % pruning_interval == 0:
                         size_threshold = 20 if iteration > opacity_reset_interval else None
                         gaussians.prune(densify_threshold,
-                                        opacity_threshold, 5, size_threshold)
+                                        opacity_threshold, 10, size_threshold)
 
                         if iteration > regular_from:
                             gaussians.reset_neighbors()
