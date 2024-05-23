@@ -22,11 +22,11 @@ if __name__ == '__main__':
 
     # training options
     parser.add_argument('--coarse_iters', type=int,
-                        default=3000, help="training iters")
+                        default=5000, help="training iters")
     parser.add_argument('--fine_iters', type=int,
-                        default=65000, help="training iters")
+                        default=50000, help="training iters")
     parser.add_argument('--percent_dense', type=float,
-                        default=0.01, help="percent of dense points")
+                        default=0.001, help="percent of dense points")
     parser.add_argument('--position_lr_init', type=float,
                         default=0.00016, help="initial learning rate")
     parser.add_argument('--position_lr_final', type=float,
