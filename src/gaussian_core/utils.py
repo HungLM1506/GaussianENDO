@@ -226,8 +226,8 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
             #     0).unsqueeze(0).to(image_tensor.device)
             # weight = data['spatialweight'].unsqueeze(
             #     0).unsqueeze(0).to(image_tensor.device)
-            # gt_depth = (data['depth']/(data['depth'].max()+1e-5)
-            #             ).unsqueeze(0).unsqueeze(0).to(image_tensor.device)
+            gt_depth = (data['depth']/(data['depth'].max()+1e-5)
+                        ).unsqueeze(0).unsqueeze(0).to(image_tensor.device)
 
             # Loss
             # Using L1 to compute loss between image render and image ground truth
@@ -237,14 +237,14 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
                          ).mean().double()
 
             # Loss of depth: using huber loss: combine advantage of L1 and L2
-            # depth_loss = F.huber_loss(
-            #     pred_depth_tensor, gt_depth[..., 0], delta=0.2)
+            depth_loss = F.huber_loss(
+                pred_depth_tensor, gt_depth[..., 0], delta=0.2)
 
             img_tvloss = img_tv_loss(image_tensor)
 
             # loss = Ll1 + 0.5*depth_loss + 0.01*img_tvloss
             # loss = 0.8*Ll1 + 0.2 * (1.0 - ssim(image_tensor, gt_image_tensor))
-            loss = Ll1 + 0.03 * (img_tvloss)
+            loss = Ll1 + 0.03 * (img_tvloss) + depth_loss
 
             # if iteration > start_entropy_regular and iteration < end_entropy_regular:
             #     opacities_loss_tensor = torch.tensor(
