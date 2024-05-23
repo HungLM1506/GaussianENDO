@@ -296,7 +296,7 @@ class EndoDataset:
         # factor=8 downsamples original imgs by 8x
         # poses, _, imgs, masks, depth = _load_data(
         #     self.root_path, factor=None, fg_mask=True, use_depth=True, gt_mask=gt_mask)
-        poses, _, imgs = _load_data(
+        poses, _, imgs, depth = _load_data(
             self.root_path, factor=None, use_depth=True)
 
         davinci_endoscopic = True
