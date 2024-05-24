@@ -48,8 +48,16 @@ class Deformation(nn.Module):
         h = self.feature_out(h)
         return h
 
+    def forward_static(self, rays_pts_emb):
+        grid_feature = self.grid(rays_pts_emb[:, :3])
+        dx = self.static_mlp(grid_feature)
+        return rays_pts_emb[:, :3] + dx
+
     def forward(self, rays_pts, scales=None, rotations=None, opacity=None, shs=None, time=None):
-        return self.forward_dynamic(rays_pts, scales, rotations, opacity, shs, time)
+        if time is not None:
+            return self.forward_dynamic(rays_pts, scales, rotations, opacity, shs, time)
+        else:
+            return self.forward_static(rays_pts)
 
     def forward_dynamic(self, rays_pts_emb, scales_emb, rotations_emb, opacity_emb, shs_emb, time_emb):
 
