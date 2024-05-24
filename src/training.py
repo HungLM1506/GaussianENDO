@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     # training options
     parser.add_argument('--coarse_iters', type=int,
-                        default=5000, help="training iters")
+                        default=1000, help="training iters")
     parser.add_argument('--fine_iters', type=int,
                         default=50000, help="training iters")
     parser.add_argument('--percent_dense', type=float,
