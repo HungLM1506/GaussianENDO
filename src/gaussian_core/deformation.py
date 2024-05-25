@@ -24,6 +24,8 @@ class Deformation(nn.Module):
 
         self.grid = HexPlaneField(1.6, kplanes_config, [1, 2, 4, 8]).float()
         self.onenet = self.create_net()
+        self.static_mlp = nn.Sequential(nn.ReLU(), nn.Linear(
+            self.W, self.W), nn.ReLU(), nn.Linear(self.W, 1))
 
     @property
     def get_aabb(self):
@@ -54,10 +56,10 @@ class Deformation(nn.Module):
         return rays_pts_emb[:, :3] + dx
 
     def forward(self, rays_pts, scales=None, rotations=None, opacity=None, shs=None, time=None):
-        if time is not None:
-            return self.forward_dynamic(rays_pts, scales, rotations, opacity, shs, time)
-        else:
+        if time is None:
             return self.forward_static(rays_pts)
+        else:
+            return self.forward_dynamic(rays_pts, scales, rotations, opacity, shs, time)
 
     def forward_dynamic(self, rays_pts_emb, scales_emb, rotations_emb, opacity_emb, shs_emb, time_emb):
 
