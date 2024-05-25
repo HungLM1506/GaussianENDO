@@ -24,7 +24,7 @@ class Deformation(nn.Module):
 
         self.grid = HexPlaneField(1.6, kplanes_config, [1, 2, 4, 8]).float()
         self.onenet = self.create_net()
-        self.static_mlp = nn.Sequential(nn.ReLU(), nn.Linear(
+        self.static_mlp = nn.Sequential(nn.ReLU(), nn.Linear(128, self.W), nn.ReLU(), nn.Linear(
             self.W, self.W), nn.ReLU(), nn.Linear(self.W, 1))
 
     @property
