@@ -20,6 +20,7 @@ from gaussian_core.cameras import convert_gs_to_pytorch3d
 from pytorch3d.transforms import quaternion_apply, quaternion_invert
 from utils.loss_utils import ssim
 from gaussian_core.init_point_from_depth import init_point
+from pre_process.remove_outlier_pcd import remove_noise_pts
 
 
 def to8b(x): return (255*np.clip(x.cpu().numpy(), 0, 1)).astype(np.uint8)
@@ -128,6 +129,7 @@ def training(opt, dataloader, gaussians, use_colmap=None):
     else:
         pts_from_depth, color = init_point(
             'COLON_CUSTOM/depth/frame_0_depth.png', 'COLON_CUSTOM/images/frame_0.png', 'COLON_CUSTOM/poses_bounds.npy')
+        pts_from_depth = remove_noise_pts(pts_from_depth)
         normals = np.zeros_like(pts_from_depth)
         pcd = BasicPointCloud(points=pts_from_depth,
                               colors=color, normals=normals)
