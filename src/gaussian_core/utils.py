@@ -19,6 +19,7 @@ from gaussian_core.cameras import CamerasWrapper
 from gaussian_core.cameras import convert_gs_to_pytorch3d
 from pytorch3d.transforms import quaternion_apply, quaternion_invert
 from utils.loss_utils import ssim
+from gaussian_core.init_point_from_depth import init_point
 
 
 def to8b(x): return (255*np.clip(x.cpu().numpy(), 0, 1)).astype(np.uint8)
@@ -107,21 +108,29 @@ def fetchPly(path):
     return BasicPointCloud(points=positions, colors=colors, normals=normals)
 
 
-def training(opt, dataloader, gaussians):
+def training(opt, dataloader, gaussians, use_colmap=None):
 
     spatial_lr_scale = 5
 
     data = next(iter(dataloader))
-    ply_path = os.path.join(data['sparse_path'], "points3D.ply")
-    bin_path = os.path.join(data['sparse_path'], "points3D.bin")
-    if not os.path.exists(ply_path):
-        print("Converting point3d.bin to .ply, will happen only the first time you open the scene.")
+    if use_colmap is not None:
+        ply_path = os.path.join(data['sparse_path'], "points3D.ply")
+        bin_path = os.path.join(data['sparse_path'], "points3D.bin")
+        if not os.path.exists(ply_path):
+            print(
+                "Converting point3d.bin to .ply, will happen only the first time you open the scene.")
 
-        xyz, rgb, _ = read_points3D_binary(bin_path)
+            xyz, rgb, _ = read_points3D_binary(bin_path)
 
-        storePly(ply_path, xyz, rgb)
+            storePly(ply_path, xyz, rgb)
 
-    pcd = fetchPly(ply_path)
+        pcd = fetchPly(ply_path)
+    else:
+        pts_from_depth, color = init_point(
+            'COLON_CUSTOM/depth/frame_0_depth.png', 'COLON_CUSTOM/images/frame_0.png', 'COLON/poses_bounds.npy')
+        normals = np.zeros_like(xyz)
+        pcd = BasicPointCloud(points=pts_from_depth,
+                              colors=color, normals=normals)
     gaussians.create_from_pcd(pcd, spatial_lr_scale)
 
     gaussians.training_setup()
