@@ -127,8 +127,8 @@ def training(opt, dataloader, gaussians, use_colmap=None):
         pcd = fetchPly(ply_path)
     else:
         pts_from_depth, color = init_point(
-            'COLON_CUSTOM/depth/frame_0_depth.png', 'COLON_CUSTOM/images/frame_0.png', 'COLON/poses_bounds.npy')
-        normals = np.zeros_like(xyz)
+            'COLON_CUSTOM/depth/frame_0_depth.png', 'COLON_CUSTOM/images/frame_0.png', 'COLON_CUSTOM/poses_bounds.npy')
+        normals = np.zeros_like(pts_from_depth)
         pcd = BasicPointCloud(points=pts_from_depth,
                               colors=color, normals=normals)
     gaussians.create_from_pcd(pcd, spatial_lr_scale)
