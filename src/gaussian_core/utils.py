@@ -20,19 +20,19 @@ from gaussian_core.cameras import convert_gs_to_pytorch3d
 from pytorch3d.transforms import quaternion_apply, quaternion_invert
 from utils.loss_utils import ssim
 from gaussian_core.init_point_from_depth import init_point
-
+import wandb
 import open3d as o3d
 
 
 def remove_noise_pts(point_cloud_np):
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(point_cloud_np)
-    
+
     cl, ind = pcd.remove_statistical_outlier(nb_neighbors=50, std_ratio=0.5)
     inlier_cloud = pcd.select_by_index(ind)
-    
+
     inlier_cloud_np = np.asarray(inlier_cloud.points)
-    
+
     return inlier_cloud_np
 
 
@@ -153,7 +153,18 @@ def training(opt, dataloader, gaussians, use_colmap=None):
     if opt.coarse_iters > 0:
         recon(opt, dataloader, gaussians, "coarse", opt.coarse_iters)
     if opt.fine_iters > 0:
+        import wandb
+        wandb.init(
+            # set the wandb project where this run will be logged
+            project="my-awesome-project",
+
+            # track hyperparameters and run metadata
+            config={
+                "architecture": "Deformation",
+                "dataset": "endoscopy",
+            })
         recon(opt, dataloader, gaussians, "fine", opt.fine_iters)
+        wandb.finish()
 
 
 def recon(opt, dataloader, gaussians, stage, num_iter):
@@ -278,7 +289,7 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
             if stage == "fine":
                 tv_loss = gaussians.compute_regulation(1e-3, 2e-2, 1e-3)
                 loss += tv_loss
-
+            wandb.log({"psnr": psnr_, "loss": loss})
             loss.backward()
             viewspace_point_tensor_grad = torch.zeros_like(
                 viewspace_point_tensor)
