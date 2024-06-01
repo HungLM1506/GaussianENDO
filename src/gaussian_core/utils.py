@@ -22,6 +22,7 @@ from utils.loss_utils import ssim
 from gaussian_core.init_point_from_depth import init_point
 import wandb
 import open3d as o3d
+from torchmetrics.functional.regression import pearson_corrcoef
 
 
 def remove_noise_pts(point_cloud_np):
@@ -270,14 +271,18 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
                          ).mean().double()
 
             # Loss of depth: using huber loss: combine advantage of L1 and L2
-            depth_loss = F.huber_loss(
-                pred_depth_tensor, gt_depth[..., 0], delta=0.2)
+            # depth_loss = F.huber_loss(
+            #     pred_depth_tensor, gt_depth[..., 0], delta=0.2)
+            depth_loss = 0.001 * \
+                (1 - pearson_corrcoef(gt_depth[..., 0], pred_depth_tensor))
 
             img_tvloss = img_tv_loss(image_tensor)
+            depth_tvloss = img_tv_loss(pred_depth_tensor)
 
+            tv_loss = 0.03 * (img_tv_loss + depth_tvloss)
             # loss = Ll1 + 0.5*depth_loss + 0.01*img_tvloss
             # loss = 0.8*Ll1 + 0.2 * (1.0 - ssim(image_tensor, gt_image_tensor))
-            loss = 0.1 * Ll1 + 0.03 * (img_tvloss) + 0.8 * depth_loss
+            loss = Ll1 + tv_loss + depth_loss
 
             # if iteration > start_entropy_regular and iteration < end_entropy_regular:
             #     opacities_loss_tensor = torch.tensor(
@@ -287,7 +292,7 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
             if stage == "fine":
                 tv_loss = gaussians.compute_regulation(1e-3, 2e-2, 1e-3)
                 loss += tv_loss
-            wandb.log({"psnr": psnr_, "loss": loss})
+
             loss.backward()
             viewspace_point_tensor_grad = torch.zeros_like(
                 viewspace_point_tensor)
@@ -311,7 +316,7 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
                                               "point": f"{total_point}"
                                               })
                     progress_bar.update(10)
-
+                    wandb.log({"psnr": psnr_, "loss": ema_loss_for_log})
                 if iteration > final_iter and stage == 'fine':
                     progress_bar.close()
 
