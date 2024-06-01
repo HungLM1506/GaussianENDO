@@ -275,7 +275,7 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
             #     pred_depth_tensor, gt_depth[..., 0], delta=0.2)
             # ------------------------------------------------------
             rendered_depth_reshape = pred_depth_tensor.reshape(-1, 1)
-            gt_depths_reshape = gt_depth.reshape(-1, 1)
+            gt_depths_reshape = gt_depth[..., 0].reshape(-1, 1)
             depth_loss = 0.001 * \
                 (1 - pearson_corrcoef(gt_depths_reshape, rendered_depth_reshape))
 
