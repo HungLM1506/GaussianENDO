@@ -273,8 +273,11 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
             # Loss of depth: using huber loss: combine advantage of L1 and L2
             # depth_loss = F.huber_loss(
             #     pred_depth_tensor, gt_depth[..., 0], delta=0.2)
+            # ------------------------------------------------------
+            rendered_depth_reshape = pred_depth_tensor.reshape(-1, 1)
+            gt_depths_reshape = gt_depth.reshape(-1, 1)
             depth_loss = 0.001 * \
-                (1 - pearson_corrcoef(gt_depth[..., 0], pred_depth_tensor))
+                (1 - pearson_corrcoef(gt_depths_reshape, rendered_depth_reshape))
 
             img_tvloss = img_tv_loss(image_tensor)
             depth_tvloss = img_tv_loss(pred_depth_tensor)
