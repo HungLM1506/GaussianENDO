@@ -362,7 +362,7 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
                             gaussians.reset_neighbors()
 
                     if iteration > pruning_from_iter and iteration % pruning_interval == 0:
-                        size_threshold = 20 if iteration > opacity_reset_interval else None
+                        size_threshold = 40 if iteration > opacity_reset_interval else None
                         gaussians.prune(densify_threshold,
                                         opacity_threshold, 10, size_threshold)
 
