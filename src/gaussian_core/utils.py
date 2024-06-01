@@ -175,21 +175,21 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
     background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
 
     # densify_from_iter = 500
-    densify_from_iter = 1000
-    densify_until_iter = 45000
+    densify_from_iter = 500
+    densify_until_iter = 15000
     densification_interval = 100
     densify_grad_threshold_coarse = 0.0002
     densify_grad_threshold_fine_init = 0.0002
     densify_grad_threshold_after = 0.0002
 
-    opacity_reset_interval = 6000
+    opacity_reset_interval = 3000
     opacity_threshold_coarse = 0.005
     opacity_threshold_fine_init = 0.005
     opacity_threshold_fine_after = 0.005
 
     # pruning_from_iter = 500
     pruning_from_iter = 1000
-    pruning_interval = 7000
+    pruning_interval = 100
 
     iter_start = torch.cuda.Event(enable_timing=True)
     iter_end = torch.cuda.Event(enable_timing=True)
