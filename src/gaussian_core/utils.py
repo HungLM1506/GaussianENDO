@@ -149,20 +149,18 @@ def training(opt, dataloader, gaussians, use_colmap=None):
     gaussians.create_from_pcd(pcd, spatial_lr_scale)
 
     gaussians.training_setup()
+    wandb.init(
+        # set the wandb project where this run will be logged
+        project="my-awesome-project",
 
+        # track hyperparameters and run metadata
+        config={
+                "architecture": "Deformation",
+                "dataset": "endoscopy",
+        })
     if opt.coarse_iters > 0:
         recon(opt, dataloader, gaussians, "coarse", opt.coarse_iters)
     if opt.fine_iters > 0:
-        import wandb
-        wandb.init(
-            # set the wandb project where this run will be logged
-            project="my-awesome-project",
-
-            # track hyperparameters and run metadata
-            config={
-                "architecture": "Deformation",
-                "dataset": "endoscopy",
-            })
         recon(opt, dataloader, gaussians, "fine", opt.fine_iters)
         wandb.finish()
 
