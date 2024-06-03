@@ -25,16 +25,31 @@ import open3d as o3d
 from torchmetrics.functional.regression import pearson_corrcoef
 
 
-def remove_noise_pts(point_cloud_np):
+# def remove_noise_pts(point_cloud_np):
+#     pcd = o3d.geometry.PointCloud()
+#     pcd.points = o3d.utility.Vector3dVector(point_cloud_np)
+
+#     cl, ind = pcd.remove_statistical_outlier(nb_neighbors=50, std_ratio=0.5)
+#     inlier_cloud = pcd.select_by_index(ind)
+
+#     inlier_cloud_np = np.asarray(inlier_cloud.points)
+
+#     return inlier_cloud_np
+def remove_noise_pts_with_color(point_cloud_np, color_np):
+    # Convert numpy arrays to open3d point cloud and colors
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(point_cloud_np)
+    pcd.colors = o3d.utility.Vector3dVector(color_np)
 
+    # Remove statistical outliers
     cl, ind = pcd.remove_statistical_outlier(nb_neighbors=50, std_ratio=0.5)
     inlier_cloud = pcd.select_by_index(ind)
 
-    inlier_cloud_np = np.asarray(inlier_cloud.points)
+    # Convert back to numpy arrays
+    inlier_points_np = np.asarray(inlier_cloud.points)
+    inlier_colors_np = np.asarray(inlier_cloud.colors)
 
-    return inlier_cloud_np
+    return inlier_points_np, inlier_colors_np
 
 
 def to8b(x): return (255*np.clip(x.cpu().numpy(), 0, 1)).astype(np.uint8)
@@ -143,10 +158,11 @@ def training(opt, dataloader, gaussians, use_colmap=None):
     else:
         pts_from_depth, color = init_point(
             'COLON_CUSTOM/depth/frame_0_depth.png', 'COLON_CUSTOM/images/frame_0.png', 'COLON_CUSTOM/poses_bounds.npy')
-        normals = np.zeros_like(pts_from_depth)
+        pts_new, color_new = remove_noise_pts_with_color(pts_from_depth, color)
+        normals = np.zeros_like(pts_new)
         # pts_from_depth = remove_noise_pts(pts_from_depth)
-        pcd = BasicPointCloud(points=pts_from_depth,
-                              colors=color, normals=normals)
+        pcd = BasicPointCloud(points=pts_new,
+                              colors=color_new, normals=normals)
     gaussians.create_from_pcd(pcd, spatial_lr_scale)
 
     gaussians.training_setup()
