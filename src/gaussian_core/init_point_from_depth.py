@@ -30,50 +30,78 @@ def load_pose(path_poses):
     return image_poses
 
 
-def get_pts_wld(pts, pose):
-    R, T = pose
-    R = np.transpose(R)
-    w2c = np.concatenate((R, T[..., None]), axis=-1)
-    w2c = np.concatenate((w2c, np.array([[0, 0, 0, 1]])), axis=0)
-    c2w = np.linalg.inv(w2c)
-    pts_cam_homo = np.concatenate(
-        (pts, np.ones((pts.shape[0], 1))), axis=-1)
-    pts_wld = np.transpose(c2w @ np.transpose(pts_cam_homo))
-    pts_wld = pts_wld[:, :3]
-    return pts_wld
+def get_pts_wld(pts_cams, poses):
+    pts_wlds = []
+    for pose in poses:
+        R, T = pose
+        R = np.transpose(R)
+        w2c = np.concatenate((R, T[..., None]), axis=-1)
+        w2c = np.concatenate((w2c, np.array([[0, 0, 0, 1]])), axis=0)
+        c2w = np.linalg.inv(w2c)
+        pts_cam_homo = np.concatenate(
+            (pts_cams, np.ones((pts_cams.shape[0], 1))), axis=-1)
+        pts_wld = np.transpose(c2w @ np.transpose(pts_cam_homo))
+        pts_wld = pts_wld[:, :3]
+        pts_wlds.append(pts_wld)
+    return np.array(pts_wlds).reshape(-1, 3)
 
 
-def get_color_depth(depth_path, image_path):
+def get_color_depth(depth_dir, image_dir):
+    depths = []
+    for i in range(len(depth_dir)):
+        depth = np.array(Image.open(os.path.join(
+            'pre_process/depth', depth_dir[i])))[..., 0] / 255.0
+        depth[depth != 0] = (1 / depth[depth != 0])*0.4
+        depth[depth == 0] = depth.max()
+        depths.append(depth)
 
-    depth = np.array(Image.open(depth_path))[..., 0] / 255.0
-    depth[depth != 0] = (1 / depth[depth != 0])*0.4
-    depth[depth == 0] = depth.max()
+    colors = []
+    for i in range(len(image_dir)):
+        color = np.array(Image.open(os.path.join(
+            'pre_process/images', image_dir[i]))) / 255.0
+        colors.append(color)
+    return depths, colors
 
-    color = np.array(Image.open(image_path)) / 255.0
-    return depth, color
+
+def get_pts_cam(depths, colors):
+    pts_cams = []
+    colors_cams = []
+    for i in range(len(depths)):
+        W, H = 680, 672
+        i, j = np.meshgrid(np.linspace(0, W-1, W), np.linspace(0, H-1, H))
+        X_Z = (i-W/2) / 307.27544176  # shape (680,3)
+        Y_Z = (j-H/2) / 307.27544176  # shape (680,3)
+        Z = depths[i]  # 680
+        X = X_Z * Z
+        Y = Y_Z * Z
+        pts_cam = np.stack((X, Y, Z), axis=-1).reshape(-1, 3)
+        pts_cams.append(pts_cam)
+        colors = colors.reshape(-1, 3)
+        colors_cams.append(colors)
+    return np.array(pts_cams).reshape(-1, 3), np.array(colors_cams).reshape(-1, 3)
 
 
-def get_pts_cam(depth, color):
-    W, H = 680, 672
-    i, j = np.meshgrid(np.linspace(0, W-1, W), np.linspace(0, H-1, H))
-    X_Z = (i-W/2) / 307.27544176  # 680,3
-    print(X_Z.shape)
-    Y_Z = (j-H/2) / 307.27544176  # 680,3
-    Z = depth  # 680
-    # print(Z.shape)
-    # print('Z: ', Z.shape)
-    X = X_Z * Z
-    # print('X: ', X.shape)
-    Y = Y_Z * Z
-    # print('Y: ', Y.shape)
-    pts_cam = np.stack((X, Y, Z), axis=-1).reshape(-1, 3)
-    color = color.reshape(-1, 3)
-    return pts_cam, color
+def remove_noise_pts_with_color(point_cloud_np, color_np):
+    # Convert numpy arrays to open3d point cloud and colors
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(point_cloud_np)
+    pcd.colors = o3d.utility.Vector3dVector(color_np)
+
+    # Remove statistical outliers
+    cl, ind = pcd.remove_statistical_outlier(nb_neighbors=50, std_ratio=0.2)
+    inlier_cloud = pcd.select_by_index(ind)
+
+    # Convert back to numpy arrays
+    inlier_points_np = np.asarray(inlier_cloud.points)
+    inlier_colors_np = np.asarray(inlier_cloud.colors)
+
+    return inlier_points_np, inlier_colors_np
 
 
 def init_point(depth_path, image_path, pose_path):
-    pose = load_pose(pose_path)
-    depth, color = get_color_depth(depth_path, image_path)
-    pts_cam, color = get_pts_cam(depth=depth, color=color)
-    pts = get_pts_wld(pts_cam, pose[0])
-    return pts,color
+    poses = load_pose(pose_path)
+    depths, colors = get_color_depth(depth_path, image_path)
+    pts_cam, color_cam = get_pts_cam(depths=depths, colors=colors)
+    pts = get_pts_wld(pts_cam, poses)
+    pts_final, color_final = remove_noise_pts_with_color(pts, color_cam)
+    return pts_final, color_final
