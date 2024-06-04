@@ -340,9 +340,11 @@ def recon(opt, dataloader, gaussians, stage, num_iter):
                     progress_bar.close()
 
                 # Log and save
-                if iteration % 20000 == 0 or iteration == final_iter:
+                if iteration % 10000 == 0 or iteration == final_iter:
                     print("\n[ITER {}] Saving Gaussians".format(iteration))
+                    point_cloud = np.array(total_point)
 
+                    wandb.log({"point_cloud": wandb.Object3D(point_cloud)})
                     gaussians.save(opt.workspace, iteration, stage)
 
                 # Densification
