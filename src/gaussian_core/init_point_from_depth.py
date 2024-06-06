@@ -108,5 +108,5 @@ def init_point(depth_dir, img_dir, pose_path):
     return pts_final, color_final
 
 
-pts_final, color_final = init_point(
-    'pre_process/depth', 'pre_process/images', 'data_test/poses_bounds.npy')
+# pts_final, color_final = init_point(
+#     'pre_process/depth', 'pre_process/images', 'data_test/poses_bounds.npy')
