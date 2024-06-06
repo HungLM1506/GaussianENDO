@@ -64,20 +64,21 @@ def get_color_depth(depth_dir, image_dir):
 
 
 def get_pts_cam(depths, colors):
+    # print(depths)
     pts_cams = []
     colors_cams = []
-    for i in range(len(depths)):
+    for index in range(len(depths)):
         W, H = 680, 672
         i, j = np.meshgrid(np.linspace(0, W-1, W), np.linspace(0, H-1, H))
         X_Z = (i-W/2) / 307.27544176  # shape (680,3)
         Y_Z = (j-H/2) / 307.27544176  # shape (680,3)
-        Z = depths[i]  # 680
+        Z = depths[index]  # 680
         X = X_Z * Z
         Y = Y_Z * Z
         pts_cam = np.stack((X, Y, Z), axis=-1).reshape(-1, 3)
         pts_cams.append(pts_cam)
-        colors = colors.reshape(-1, 3)
-        colors_cams.append(colors)
+        color = colors[index]
+        colors_cams.append(color)
     return np.array(pts_cams).reshape(-1, 3), np.array(colors_cams).reshape(-1, 3)
 
 
@@ -105,3 +106,7 @@ def init_point(depth_dir, img_dir, pose_path):
     pts = get_pts_wld(pts_cam, poses)
     pts_final, color_final = remove_noise_pts_with_color(pts, color_cam)
     return pts_final, color_final
+
+
+pts_final, color_final = init_point(
+    'pre_process/depth', 'pre_process/images', 'data_test/poses_bounds.npy')
