@@ -48,17 +48,17 @@ def get_pts_wld(pts_cams, poses):
 
 def get_color_depth(depth_dir, image_dir):
     depths = []
-    for i in range(len(depth_dir)):
+    for depth_path in os.listdir(depth_dir):
         depth = np.array(Image.open(os.path.join(
-            'pre_process/depth', depth_dir[i])))[..., 0] / 255.0
+            depth_dir, depth_path)))[..., 0] / 255.0
         depth[depth != 0] = (1 / depth[depth != 0])*0.4
         depth[depth == 0] = depth.max()
         depths.append(depth)
 
     colors = []
-    for i in range(len(image_dir)):
+    for img_path in os.listdir(image_dir):
         color = np.array(Image.open(os.path.join(
-            'pre_process/images', image_dir[i]))) / 255.0
+            image_dir, img_path))) / 255.0
         colors.append(color)
     return depths, colors
 
@@ -98,9 +98,9 @@ def remove_noise_pts_with_color(point_cloud_np, color_np):
     return inlier_points_np, inlier_colors_np
 
 
-def init_point(depth_path, image_path, pose_path):
+def init_point(depth_dir, img_dir, pose_path):
     poses = load_pose(pose_path)
-    depths, colors = get_color_depth(depth_path, image_path)
+    depths, colors = get_color_depth(depth_dir, img_dir)
     pts_cam, color_cam = get_pts_cam(depths=depths, colors=colors)
     pts = get_pts_wld(pts_cam, poses)
     pts_final, color_final = remove_noise_pts_with_color(pts, color_cam)
