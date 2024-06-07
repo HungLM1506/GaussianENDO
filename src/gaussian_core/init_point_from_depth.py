@@ -89,7 +89,8 @@ def remove_noise_pts_with_color(point_cloud_np, color_np):
     pcd.colors = o3d.utility.Vector3dVector(color_np)
 
     # Remove statistical outliers
-    cl, ind = pcd.remove_statistical_outlier(nb_neighbors=50, std_ratio=0.2)
+    cl, ind = pcd.remove_statistical_outlier(
+        nb_neighbors=100, std_ratio=0.0005)
     inlier_cloud = pcd.select_by_index(ind)
 
     # Convert back to numpy arrays
