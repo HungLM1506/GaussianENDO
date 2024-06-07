@@ -79,7 +79,7 @@ def get_pts_cam(depths, colors):
         pts_cams.append(pts_cam)
         color = colors[index]
         colors_cams.append(color)
-    return np.array(pts_cams).reshape(-1, 3), np.array(colors_cams).reshape(-1, 3)
+    return pts_cams, np.array(colors_cams).reshape(-1, 3)
 
 
 def remove_noise_pts_with_color(point_cloud_np, color_np):
@@ -90,7 +90,7 @@ def remove_noise_pts_with_color(point_cloud_np, color_np):
 
     # Remove statistical outliers
     cl, ind = pcd.remove_statistical_outlier(
-        nb_neighbors=100, std_ratio=0.0005)
+        nb_neighbors=16, std_ratio=0.003)
     inlier_cloud = pcd.select_by_index(ind)
 
     # Convert back to numpy arrays
@@ -109,5 +109,5 @@ def init_point(depth_dir, img_dir, pose_path):
     return pts_final, color_final
 
 
-# pts_final, color_final = init_point(
-#     'pre_process/depth', 'pre_process/images', 'data_test/poses_bounds.npy')
+pts_final, color_final = init_point(
+    'pre_process/depth', 'pre_process/images', 'data_test/poses_bounds.npy')
