@@ -238,7 +238,7 @@ def spatiotemporal_importance_from_masks(masks):
 
 
 class EndoDataset:
-    def __init__(self, opt, device, use_depth=True, use_mask=True11516, type='train'):
+    def __init__(self, opt, device, use_depth=True, use_mask=True, type='train'):
         super().__init__()
 
         self.opt = opt
