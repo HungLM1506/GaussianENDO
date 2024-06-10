@@ -100,7 +100,7 @@ def _preprocess_imgs(basedir, dir_name='images', factor=None, width=None, height
     return imgfiles, factor
 
 
-def _load_data(basedir, factor=None, width=None, height=None, load_imgs=True, use_mask=False, use_depth=True, gt_mask=True):
+def _load_data(basedir, factor=None, width=None, height=None, load_imgs=True, use_mask=True, use_depth=True, gt_mask=True):
 
     def check_colorimg_fn(f, i): return f.endswith(
         'JPG') or f.endswith('jpg') or f.endswith('png')
@@ -250,7 +250,7 @@ class EndoDataset:
         self.training = self.type == 'train'
         self.sparse_path = os.path.join(self.root_path, 'sparse/')
         self.use_depth = True
-        self.use_mask = False
+        self.use_mask = True
 
         if not os.path.exists(os.path.join(self.root_path, 'gt_masks')):
             gt_mask = False
