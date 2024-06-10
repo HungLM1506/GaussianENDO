@@ -105,7 +105,7 @@ def init_point(depth_dir, img_dir, pose_path):
     poses = load_pose(pose_path)
     depths, colors = get_color_depth(depth_dir, img_dir)
     pts_cam, color_cam = get_pts_cam(depths=depths, colors=colors)
-    pts = get_pts_wld(pts_cam, poses, interval=6)
+    pts = get_pts_wld(pts_cam, poses, interval=10)
     pts_final, color_final = remove_noise_pts_with_color(pts, color_cam)
     print(len(pts_final))
     return pts_final, color_final
