@@ -134,9 +134,9 @@ def _load_data(basedir, factor=None, width=None, height=None, load_imgs=True, us
 
     def imread(f):
         if f.endswith('png'):
-            return imageio.imread(f, format="PNG-PIL", ignoregamma=True)
+            return np.array(imageio.imread(f, format="PNG-PIL", ignoregamma=True)).resize((500, 640))
         else:
-            return imageio.imread(f)
+            return np.array(imageio.imread(f)).resize((500, 640))
 
     rgb_imgs = [imread(f)[..., :3]/255. for f in rgb_files]
     rgb_imgs = np.stack(rgb_imgs, -1)
@@ -155,7 +155,8 @@ def _load_data(basedir, factor=None, width=None, height=None, load_imgs=True, us
                 len(rgb_files), len(mask_files)))
             return
 
-        mask_imgs = [imread(f).resize((500, 640)) / 255.0 for f in mask_files]
+        mask_imgs = [imread(f).resize(
+            (500, 640), PIL.Image.ANTIALIAS) / 255.0 for f in mask_files]
 
         if mask_imgs[0].shape[:2] != rgb_imgs[..., 0].shape[:2]:
             print('Mismatch size between rgb imgs {} and mask imgs {} !!!!'.format(
