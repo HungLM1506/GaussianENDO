@@ -155,7 +155,7 @@ def _load_data(basedir, factor=None, width=None, height=None, load_imgs=True, us
                 len(rgb_files), len(mask_files)))
             return
 
-        mask_imgs = [imread(f) / 255.0 for f in mask_files]
+        mask_imgs = [imread(f).resize((500, 640)) / 255.0 for f in mask_files]
 
         if mask_imgs[0].shape[:2] != rgb_imgs[..., 0].shape[:2]:
             print('Mismatch size between rgb imgs {} and mask imgs {} !!!!'.format(
