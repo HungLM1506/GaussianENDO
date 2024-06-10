@@ -13,13 +13,6 @@ from utils.colmap_utils import read_extrinsics_binary, read_intrinsics_binary, q
 
 
 def _minify(basedir, factors=[], dir_name='images', resolutions=[]):
-    """
-        basedir: đường dẫn tới thưu mục gốc
-        factors: Một danh sách các tỷ lệ phần trăm (ví dụ: [50, 25, 10]), đại diện cho tỷ lệ thu nhỏ ảnh xuống 
-        theo phần trăm của kích thước gốc.
-        dir_name: đường dẫn tới thư mục chứa hình ảnh
-        ---> mục tiêu là check các đường dẫn của anh có chứa ảnh hay không
-    """
     needtoload = False
     for r in factors:
         imgdir = os.path.join(basedir, '{}_{}'.format(dir_name, r))
@@ -73,27 +66,17 @@ def _minify(basedir, factors=[], dir_name='images', resolutions=[]):
 
 
 def _preprocess_imgs(basedir, dir_name='images', factor=None, width=None, height=None, check_fn=lambda x: True):
-    """
-        basedir:
-        dir_name:
-        factor:
-        width: chiều rộng mà bức ảnh muốn scale đến 
-        height:
-    return: ra toàn bộ đường dẫn của ảnh sau khi đã scale 
-    """
     img0 = [os.path.join(basedir, dir_name, f) for f in sorted(
         os.listdir(os.path.join(basedir, dir_name))) if check_fn(f, 0)][0]
-    sh = imageio.imread(img0).shape  # shape
+    sh = imageio.imread(img0).shape
 
     sfx = ''
 
     if factor is not None:
-        sfx = '_{}'.format(factor)  # stx là
-        _minify(basedir, dir_name=dir_name, factors=[
-                factor])  # kiếm tra các folder ảnh
+        sfx = '_{}'.format(factor)
+        _minify(basedir, dir_name=dir_name, factors=[factor])
         factor = factor
     elif height is not None:
-        # tỷ lệ mà chúng ta muốn scale ảnh xuống
         factor = sh[0] / float(height)
         width = int(sh[1] / factor)
         _minify(basedir, dir_name=dir_name, resolutions=[[height, width]])
@@ -117,23 +100,14 @@ def _preprocess_imgs(basedir, dir_name='images', factor=None, width=None, height
     return imgfiles, factor
 
 
-def _load_data(basedir, factor=None, width=None, height=None, load_imgs=True, use_depth=False):
-    """
-        basedir:
-        factor: 
-        width:
-        height:
-        load_imgs:
-        fg_mask:
-        used_depth: 
-        gt_mask
-    """
+def _load_data(basedir, factor=None, width=None, height=None, load_imgs=True, use_mask=False, use_depth=True, gt_mask=True):
+
     def check_colorimg_fn(f, i): return f.endswith(
         'JPG') or f.endswith('jpg') or f.endswith('png')
 
-    # if fg_mask:
-    #     def check_maskimg_fn(f, i): return f.endswith(
-    #         'JPG') or f.endswith('jpg') or f.endswith('png')
+    if use_mask:
+        def check_maskimg_fn(f, i): return f.endswith(
+            'JPG') or f.endswith('jpg') or f.endswith('png')
 
     if use_depth:
         def check_depthimg_fn(f, i): return f.endswith(
@@ -146,12 +120,12 @@ def _load_data(basedir, factor=None, width=None, height=None, load_imgs=True, us
     rgb_files, new_factor = _preprocess_imgs(
         basedir, dir_name='images', factor=factor, width=width, height=height, check_fn=check_colorimg_fn)
 
-    # if poses.shape[-1] != len(rgb_files):
-    #     print('Mismatch between imgs {} and poses {} !!!!'.format(
-    #         len(rgb_files), poses.shape[-1]))
-    #     return
+    if poses.shape[-1] != len(rgb_files):
+        print('Mismatch between imgs {} and poses {} !!!!'.format(
+            len(rgb_files), poses.shape[-1]))
+        return
 
-    sh = imageio.imread(rgb_files[0]).shape  # shape
+    sh = imageio.imread(rgb_files[0]).shape
     poses[:2, 4, :] = np.array(sh[:2]).reshape([2, 1])
     poses[2, 4, :] = poses[2, 4, :] * 1. / new_factor
 
@@ -166,32 +140,33 @@ def _load_data(basedir, factor=None, width=None, height=None, load_imgs=True, us
 
     rgb_imgs = [imread(f)[..., :3]/255. for f in rgb_files]
     rgb_imgs = np.stack(rgb_imgs, -1)
+    rgb_imgs = rgb_imgs[:500]
+    mask_imgs = None
+    if use_mask:
+        if gt_mask:
+            mask_files, _ = _preprocess_imgs(
+                basedir, dir_name='gt_masks', factor=factor, width=width, height=height, check_fn=check_maskimg_fn)
+        else:
+            mask_files, _ = _preprocess_imgs(
+                basedir, dir_name='masks', factor=factor, width=width, height=height, check_fn=check_maskimg_fn)
 
-    # mask_imgs = None
-    # if fg_mask:
-    #     if gt_mask:
-    #         mask_files, _ = _preprocess_imgs(
-    #             basedir, dir_name='gt_masks', factor=factor, width=width, height=height, check_fn=check_maskimg_fn)
-    #     else:
-    #         mask_files, _ = _preprocess_imgs(
-    #             basedir, dir_name='masks', factor=factor, width=width, height=height, check_fn=check_maskimg_fn)
+        if len(mask_files) != len(rgb_files):
+            print('Mismatch between rgb imgs {} and mask imgs {} !!!!'.format(
+                len(rgb_files), len(mask_files)))
+            return
 
-    #     if len(mask_files) != len(rgb_files):
-    #         print('Mismatch between rgb imgs {} and mask imgs {} !!!!'.format(
-    #             len(rgb_files), len(mask_files)))
-    #         return
+        mask_imgs = [imread(f) / 255.0 for f in mask_files]
 
-    #     mask_imgs = [imread(f) / 255.0 for f in mask_files]
+        if mask_imgs[0].shape[:2] != rgb_imgs[..., 0].shape[:2]:
+            print('Mismatch size between rgb imgs {} and mask imgs {} !!!!'.format(
+                rgb_imgs[..., 0].shape[:2], mask_imgs[0].shape[:2]))
+            return
 
-    #     if mask_imgs[0].shape[:2] != rgb_imgs[..., 0].shape[:2]:
-    #         print('Mismatch size between rgb imgs {} and mask imgs {} !!!!'.format(
-    #             rgb_imgs[..., 0].shape[:2], mask_imgs[0].shape[:2]))
-    #         return
-
-    #     mask_imgs = np.stack(mask_imgs, -1)
-    #     # Convert 0 for tool, 1 for not tool
-    #     mask_imgs = 1.0 - mask_imgs
-
+        mask_imgs = np.stack(mask_imgs, -1)
+        # Convert 0 for tool, 1 for not tool
+        mask_imgs = 1.0 - mask_imgs
+        mask_imgs = mask_imgs[:500]
+    depth_imgs = None
     if use_depth:
         depth_files, _ = _preprocess_imgs(
             basedir, dir_name='depth', factor=factor, width=width, height=height, check_fn=check_depthimg_fn)
@@ -203,26 +178,16 @@ def _load_data(basedir, factor=None, width=None, height=None, load_imgs=True, us
 
         depth_imgs = [imread(f) for f in depth_files]
 
-        # if depth_imgs[0].shape[:2] != rgb_imgs[..., 0].shape[:2]:
-        #     print('Mismatch size between rgb imgs {} and depth imgs {} !!!!'.format(
-        #         rgb_imgs[..., 0].shape[:2], depth_imgs[0].shape[:2]))
-        #     return
+        if depth_imgs[0].shape[:2] != rgb_imgs[..., 0].shape[:2]:
+            print('Mismatch size between rgb imgs {} and depth imgs {} !!!!'.format(
+                rgb_imgs[..., 0].shape[:2], depth_imgs[0].shape[:2]))
+            return
 
         depth_imgs = np.stack(depth_imgs, -1)
-        # min_depth = np.percentile(depth_imgs, 3.0)
-        # max_depth = np.percentile(depth_imgs, 99.9)
-        # print('min depth:', min_depth, 'max depth:', max_depth)
-        rgb_imgs = rgb_imgs[:500]
         depth_imgs = depth_imgs[:500]
-        return poses, bds, rgb_imgs, depth_imgs
-
-    rgb_imgs = rgb_imgs[:500]
-    # mask_imgs = mask_imgs[:500]
-    # depth_imgs = depth_imgs[:500]
 
     print('Loaded image data', rgb_imgs.shape, poses[:, -1, 0])
-
-    return poses, bds, rgb_imgs
+    return poses, bds, rgb_imgs, mask_imgs, depth_imgs
 
 
 def normalize(x):
@@ -266,9 +231,6 @@ def recenter_poses(poses):
 
 
 def spatiotemporal_importance_from_masks(masks):
-    """
-        tính toán độ quan trọng của các thành phần trên mask
-    """
     freq = (1.0 - masks).sum(0)
     p = freq / torch.sqrt((torch.pow(freq, 2)).sum())
 
@@ -276,7 +238,7 @@ def spatiotemporal_importance_from_masks(masks):
 
 
 class EndoDataset:
-    def __init__(self, opt, device, type='train'):
+    def __init__(self, opt, device, use_depth=True, use_mask=True11516, type='train'):
         super().__init__()
 
         self.opt = opt
@@ -286,18 +248,17 @@ class EndoDataset:
         self.start_index = opt.data_range[0]
         self.end_index = opt.data_range[1]
         self.training = self.type == 'train'
-        self.sparse_path = os.path.join(
-            self.root_path, 'sparse/')  # folder chứa colmap
+        self.sparse_path = os.path.join(self.root_path, 'sparse/')
+        self.use_depth = True
+        self.use_mask = False
 
-        # if not os.path.exists(os.path.join(self.root_path, 'gt_masks')):
-        #     gt_mask = False
-        # else:
-        #     gt_mask = True
+        if not os.path.exists(os.path.join(self.root_path, 'gt_masks')):
+            gt_mask = False
+        else:
+            gt_mask = True
         # factor=8 downsamples original imgs by 8x
-        # poses, _, imgs, masks, depth = _load_data(
-        #     self.root_path, factor=None, fg_mask=True, use_depth=True, gt_mask=gt_mask)
-        poses, _, imgs, depth = _load_data(
-            self.root_path, factor=None, use_depth=True)
+        poses, _, imgs, masks, depth = _load_data(
+            self.root_path, factor=None, use_mask=self.use_mask, use_depth=self.use_depth, gt_mask=gt_mask)
 
         davinci_endoscopic = True
         if not davinci_endoscopic:
@@ -305,8 +266,6 @@ class EndoDataset:
                 [poses[:, 1:2, :], -poses[:, 0:1, :], poses[:, 2:, :]], 1)
         poses = np.moveaxis(poses, -1, 0).astype(np.float32)
         images = np.moveaxis(imgs, -1, 0).astype(np.float32)
-        # masks = np.moveaxis(masks, -1, 0).astype(np.float32)
-        depth = np.moveaxis(depth, -1, 0).astype(np.float32)
 
         recenter = True
         if recenter and not davinci_endoscopic:
@@ -315,16 +274,19 @@ class EndoDataset:
         if self.end_index == -1:
             self.end_index = len(images)
 
+        if self.use_mask:
+            masks = np.moveaxis(masks, -1, 0).astype(np.float32)
+            self.masks = masks[self.start_index:self.end_index]
+            self.masks = torch.from_numpy(self.masks)
+            self.spatialweight = spatiotemporal_importance_from_masks(
+                self.masks)
+        if self.use_depth:
+            depth = np.moveaxis(depth, -1, 0).astype(np.float32)
+            self.depth = depth[self.start_index:self.end_index]
+            self.depth = torch.from_numpy(self.depth)
+
         self.images = images[self.start_index:self.end_index]
-        # self.masks = masks[self.start_index:self.end_index]
-        self.depth = depth[self.start_index:self.end_index]
-
         self.images = torch.from_numpy(self.images).permute(0, 3, 1, 2)
-        # self.masks = torch.from_numpy(self.masks)
-        self.depth = torch.from_numpy(self.depth)
-
-        # self.spatialweight = spatiotemporal_importance_from_masks(self.masks)
-
         self.cameras = []
         self.time = []
 
@@ -411,9 +373,11 @@ class EndoDataset:
 
         results['camera'] = self.cameras[index[0]]
         results['time'] = self.time[index[0]]
-
-        # results['mask'] = self.masks[index[0]]
-        results['depth'] = self.depth[index[0]]
+        if self.use_mask:
+            results['mask'] = self.masks[index[0]]
+            results['spatialweight'] = self.spatialweight[index[0]]
+        if self.use_depth:
+            results['depth'] = self.depth[index[0]]
         # results['spatialweight'] = self.spatialweight[index[0]]
 
         results['sparse_path'] = self.sparse_path
