@@ -134,9 +134,9 @@ def _load_data(basedir, factor=None, width=None, height=None, load_imgs=True, us
 
     def imread(f):
         if f.endswith('png'):
-            return np.array(imageio.imread(f, format="PNG-PIL", ignoregamma=True)).resize((500, 640))
+            return imageio.imread(f, format="PNG-PIL", ignoregamma=True)
         else:
-            return np.array(imageio.imread(f)).resize((500, 640))
+            return imageio.imread(f)
 
     rgb_imgs = [imread(f)[..., :3]/255. for f in rgb_files]
     rgb_imgs = np.stack(rgb_imgs, -1)
@@ -150,18 +150,18 @@ def _load_data(basedir, factor=None, width=None, height=None, load_imgs=True, us
             mask_files, _ = _preprocess_imgs(
                 basedir, dir_name='masks', factor=factor, width=width, height=height, check_fn=check_maskimg_fn)
 
-        if len(mask_files) != len(rgb_files):
-            print('Mismatch between rgb imgs {} and mask imgs {} !!!!'.format(
-                len(rgb_files), len(mask_files)))
-            return
+        # if len(mask_files) != len(rgb_files):
+        #     print('Mismatch between rgb imgs {} and mask imgs {} !!!!'.format(
+        #         len(rgb_files), len(mask_files)))
+        #     return
 
-        mask_imgs = [imread(f).resize(
-            (500, 640), PIL.Image.ANTIALIAS) / 255.0 for f in mask_files]
+        mask_imgs = [np.array(imread(f)).resize(
+            500, 640) / 255.0 for f in mask_files]
 
-        if mask_imgs[0].shape[:2] != rgb_imgs[..., 0].shape[:2]:
-            print('Mismatch size between rgb imgs {} and mask imgs {} !!!!'.format(
-                rgb_imgs[..., 0].shape[:2], mask_imgs[0].shape[:2]))
-            return
+        # if mask_imgs[0].shape[:2] != rgb_imgs[..., 0].shape[:2]:
+        #     print('Mismatch size between rgb imgs {} and mask imgs {} !!!!'.format(
+        #         rgb_imgs[..., 0].shape[:2], mask_imgs[0].shape[:2]))
+        #     return
 
         mask_imgs = np.stack(mask_imgs, -1)
         # Convert 0 for tool, 1 for not tool
